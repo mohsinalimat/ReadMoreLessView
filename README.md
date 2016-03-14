@@ -5,7 +5,7 @@ ReadMoreLessView
 
 ReadMoreLessView is written in Swift. This custom view can be used instead of a UILabel when there is necessity to show a short part of a full text but with the possibility to expand the label to show the full text. A read more/read less button allow the text to be expanded or collapsed. 
 
-It’s possible to customise font and colour of the title, the body and the button (read more/less). 
+It’s possible to customise font and colour of the title, the body and the button (read more/less). It's also possible to customize view's corner radius.
 
 ## Usage
 

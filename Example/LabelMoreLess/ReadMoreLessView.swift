@@ -15,6 +15,7 @@ protocol ReadMoreLessViewDelegate: class {
 @IBDesignable class ReadMoreLessView : UIView {
     
     @IBInspectable var maxNumberOfLinesCollapsed: Int = 5
+    private var kvoContext = 0
     
     @IBInspectable var titleColor: UIColor = .blackColor() {
         didSet{
@@ -61,8 +62,6 @@ protocol ReadMoreLessViewDelegate: class {
     var moreText = NSLocalizedString("SHOW MORE", comment: "Show More")
     var lessText = NSLocalizedString("SHOW LESS", comment: "Show Less")
 
-    private var previousTopLayoutConstraintConstant: CGFloat = 0
-    
     private enum ReadMoreLessViewState {
         case Collapsed
         case Expanded
@@ -142,7 +141,7 @@ protocol ReadMoreLessViewDelegate: class {
     }
     
     
-    func initComponents() {
+    private func initComponents() {
         titleLabel.font = titleLabelFont
         titleLabel.textColor = titleColor
         
@@ -151,7 +150,7 @@ protocol ReadMoreLessViewDelegate: class {
         
         moreLessButton.titleLabel!.font = moreLessButtonFont
         moreLessButton.setTitleColor(buttonColor, forState: .Normal)
-        
+        bodyLabel.layer.addObserver(self, forKeyPath: "bounds", options: [], context: &kvoContext)
     }
     
     // MARK: Private
@@ -175,8 +174,6 @@ protocol ReadMoreLessViewDelegate: class {
     
     func setText(title: String, body: String) {
         guard let titleLabel = titleLabel, let bodyLabel = bodyLabel else { return }
-        bodyLabel.layoutIfNeeded()
-        
         titleLabel.text = title
         bodyLabel.text = body
         
@@ -188,21 +185,31 @@ protocol ReadMoreLessViewDelegate: class {
             moreLessButton.hidden = false
             moreLessButton.enabled = true
         }
-        
-        bodyLabel.layoutIfNeeded()
-        
-        if bodyLabel.text!.isEmpty || (countLabelLines(bodyLabel) <= maxNumberOfLinesCollapsed) {
-            moreLessButton.hidden = true
-            moreLessButton.enabled = false
+    }
+    
+    override func observeValueForKeyPath(keyPath: String?, ofObject object: AnyObject?, change: [String : AnyObject]?, context: UnsafeMutablePointer<Void>) {
+        if context == &kvoContext {
+            if let bodyLabel = bodyLabel, let text = bodyLabel.text where !text.isEmpty {
+                if countLabelLines(bodyLabel) <= maxNumberOfLinesCollapsed {
+                    moreLessButton.hidden = true
+                }
+            }
+        }
+        else {
+            super.observeValueForKeyPath(keyPath, ofObject: object, change: change, context: context)
         }
     }
     
     private func countLabelLines(label: UILabel) -> Int {
-        self.layoutIfNeeded()
+        layoutIfNeeded()
         let myText = label.text! as NSString
         let attributes = [NSFontAttributeName : label.font]
         let labelSize = myText.boundingRectWithSize(CGSizeMake(label.bounds.width, CGFloat.max), options: NSStringDrawingOptions.UsesLineFragmentOrigin, attributes: attributes, context: nil)
         return Int(ceil(CGFloat(labelSize.height) / label.font.lineHeight))
+    }
+    
+    deinit {
+        bodyLabel.layer.removeObserver(self, forKeyPath: "bounds", context: &kvoContext)
     }
     
     // MARK: Interface Builder
